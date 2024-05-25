@@ -12,8 +12,15 @@ import { MdEdit } from "react-icons/md";
 import Posts from "../../Components/Posts/Posts";
 import EditProfileModal from "../EditProfileModal/EditProfileModal";
 import ProfileHeaderSkeleton from "../../Components/ProfileHeaderSkeleton/ProfileHeaderSkeleton";
+import { useQuery } from "@tanstack/react-query";
 
 const ProfilePage = () => {
+
+
+	const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+
+
+
 	const [coverImg, setCoverImg] = useState(null);
 	const [profileImg, setProfileImg] = useState(null);
 	const [feedType, setFeedType] = useState("posts");

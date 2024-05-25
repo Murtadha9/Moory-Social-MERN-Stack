@@ -56,7 +56,7 @@ export const signup=async(req,res,next)=>{
 
 export const signin=async(req,res,next)=>{
     try {
-        const {  username , password}=req.body;
+        const { username , password}=req.body;
         const validUser= await User.findOne({username})
         if(!validUser){
             return next(errorHandler(400, "Invalid username " ))

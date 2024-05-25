@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom';
+import { Link ,useNavigate } from 'react-router-dom';
 
 
 import { MdOutlineMail } from "react-icons/md";
@@ -8,7 +8,12 @@ import { MdPassword } from "react-icons/md";
 import { MdDriveFileRenameOutline } from "react-icons/md";
 import XSvg from '../../Components/XSvg/XSvg';
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+
 const SignUp = () => {
+
+	const navigate = useNavigate();
     const [formData, setFormData] = useState({
 		email: "",
 		username: "",
@@ -16,16 +21,47 @@ const SignUp = () => {
 		password: "",
 	});
 
+
+	const{mutate, isError, isPending, error }=useMutation({
+		mutationFn:async({ email, username, fullName, password })=>{
+			try {
+				const res = await fetch("/api/auth/signup", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ email, username, fullName, password }),
+				});
+
+				const data = await res.json();
+				if (!res.ok) throw new Error(data.error || "Failed to create account");
+				
+				if(res.ok){
+					navigate('/signin')
+				}
+				
+			} catch (error) {
+				console.error(error);
+				throw error;
+			}
+
+		},
+		onSuccess:()=>{
+			toast.success("Account created successfully");
+		}
+	})
+
+
 	const handleSubmit = (e) => {
 		e.preventDefault();
-		console.log(formData);
+		mutate(formData);
 	};
 
 	const handleInputChange = (e) => {
 		setFormData({ ...formData, [e.target.name]: e.target.value });
 	};
 
-	const isError = false;
+	
 
 
     return (
@@ -83,8 +119,10 @@ const SignUp = () => {
 							value={formData.password}
 						/>
 					</label>
-					<button className='btn rounded-full btn-primary text-white'>Sign up</button>
-					{isError && <p className='text-red-500'>Something went wrong</p>}
+					<button className='btn rounded-full btn-primary text-white'>
+						{isPending ? 'Loading...' :"Sign Up"}
+					</button>
+					{isError && <p className='text-red-500'>{error.message}</p>}
 				</form>
 				<div className='flex flex-col lg:w-2/3 gap-2 mt-4'>
 					<p className='text-white text-lg'>Already have an account?</p>
