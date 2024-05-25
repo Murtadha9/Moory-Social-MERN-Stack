@@ -102,12 +102,23 @@ export const commentOnPost=async (req, res, next) =>{
 
 export const deletePost=async (req, res, next) =>{
 
-    if( req.user.id !== req.params.id){
-        next(errorHandler(403 ,'You do not have permission to delete this post'))
-      }
+   
     try {
-        await Post.findByIdAndDelete(req.params.id)
-        res.status(200).json({ message: 'Post deleted successfully' });
+        const post = await Post.findById(req.params.id);
+		if (!post) {
+			return next(errorHandler(404,"Post not found"));
+		}
+
+		if (post.user.toString() !== req.user.id.toString()) {
+			return next(errorHandler(401,"You are not authorized to delete this post"));
+		}
+
+		
+
+		await Post.findByIdAndDelete(req.params.id);
+
+		res.status(200).json({ message: "Post deleted successfully" });
+        
       } catch (error) {
         next(error);
       }
