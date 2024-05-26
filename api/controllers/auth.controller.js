@@ -85,10 +85,8 @@ export const signin=async(req,res,next)=>{
 
 export const signout=async(req,res,next)=>{
     try {
-        res
-          .clearCookie('access_token')
-          .status(200)
-          .json('User has been signed out');
+        res.cookie("access_token", "", { maxAge: 0 });
+		res.status(200).json({ message: "Logged out successfully" });
       } catch (error) {
         next(error);
       }

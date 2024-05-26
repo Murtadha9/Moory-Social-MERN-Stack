@@ -100,6 +100,9 @@ const Post = ({ post }) => {
 			try {
 				const res = await fetch(`/api/post/like/${post._id}`, {
 					method: "POST",
+					headers: {
+						'Content-Type': 'application/json',
+					},
 				});
 				const data = await res.json();
 				if (!res.ok) {
@@ -107,14 +110,10 @@ const Post = ({ post }) => {
 				}
 				return data;
 			} catch (error) {
-				throw new Error(error);
+				throw new Error(error.message);
 			}
 		},
 		onSuccess: (updatedLikes) => {
-			// this is not the best UX, bc it will refetch all posts
-			// queryClient.invalidateQueries({ queryKey: ["posts"] });
-
-			// instead, update the cache directly for that post
 			queryClient.setQueryData(["posts"], (oldData) => {
 				return oldData.map((p) => {
 					if (p._id === post._id) {
@@ -125,9 +124,10 @@ const Post = ({ post }) => {
 			});
 		},
 		onError: (error) => {
-			toast.error(error.message);
+			toast.error(`Error: ${error.message}`);
 		},
 	});
+	
 
 	const handleLikePost = () => {
 		if (isLiking) return;
