@@ -17,20 +17,35 @@ import ProfileHeaderSkeleton from "../../Components/ProfileHeaderSkeleton/Profil
 import { useQuery } from "@tanstack/react-query";
 import { useFollow } from "../../hooks/useFollow";
 import { formatMemberSinceDate } from "../../utils/date";
+import useUpdateUserProfile from "../../hooks/useUpdateUserProfile";
+
+import {
+	getDownloadURL,
+	getStorage,
+	ref,
+	uploadBytesResumable,
+  } from 'firebase/storage';
+  import { app } from '../../firebase';
 
 const ProfilePage = () => {
 
+	
+	
 	const [coverImg, setCoverImg] = useState(null);
 	const [profileImg, setProfileImg] = useState(null);
-	const [feedType, setFeedType] = useState("posts");
+	
 
-	const { username } = useParams();
+
+	const [feedType, setFeedType] = useState("posts");
 
 	const coverImgRef = useRef(null);
 	const profileImgRef = useRef(null);
 
+	const { username } = useParams();
+
 	const { follow, isPending } = useFollow();
 	const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+
 	const {
 		data: user,
 		isLoading,
@@ -52,13 +67,12 @@ const ProfilePage = () => {
 		},
 	});
 
-	useEffect(() => {
-		refetch();
-	}, [username, refetch ,feedType]);
+	const { isUpdatingProfile, updateProfile } = useUpdateUserProfile();
 
 	const isMyProfile = authUser._id === user?._id;
 	const memberSinceDate = formatMemberSinceDate(user?.createdAt);
 	const amIFollowing = authUser?.following.includes(user?._id);
+
 
 
 	const handleImgChange = (e, state) => {
@@ -73,11 +87,104 @@ const ProfilePage = () => {
 		}
 	};
 
+	  const uploadImageProfile = async () => {
+		setImageFileUploading(true);
+		setImageFileUploadError(null);
+		const storage = getStorage(app);
+		const fileName = new Date().getTime() + imageFile.name;
+		const storageRef = ref(storage, fileName);
+		const uploadTask = uploadBytesResumable(storageRef, imageFile);
+		uploadTask.on(
+		  'state_changed',
+		  (snapshot) => {
+			const progress =
+			  (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+			setImageFileUploadProgress(progress.toFixed(0));
+		  },
+		  (error) => {
+			setImageFileUploadError(
+			  'Could not upload image (File must be less than 2MB)'
+			);
+			
+		  },
+		  () => {
+			getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+			  setImageFileUrl(downloadURL);
+			  setProfileImg( downloadURL );
+			  
+			});
+		  }
+		);
+	  };
+	
+	  const uploadImageCover = async () => {
+		setImageFileUploading(true);
+		setImageFileUploadError(null);
+		const storage = getStorage(app);
+		const fileName = new Date().getTime() + imageFile.name;
+		const storageRef = ref(storage, fileName);
+		const uploadTask = uploadBytesResumable(storageRef, imageFile);
+		uploadTask.on(
+		  'state_changed',
+		  (snapshot) => {
+			const progress =
+			  (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+			setImageFileUploadProgress(progress.toFixed(0));
+		  },
+		  (error) => {
+			setImageFileUploadError(
+			  'Could not upload image (File must be less than 2MB)'
+			);
+			
+		  },
+		  () => {
+			getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+			  setImageFileUrl(downloadURL);
+			  setCoverImg( downloadURL );
+			  
+			});
+		  }
+		);
+	  };
+
+
+	  useEffect(() => {
+		if (coverImg) {
+			uploadImageCover();
+		
+		}
+	  }, [coverImg]);
+
+	  useEffect(() => {
+		if (profileImg) {
+			uploadImageProfile ();
+		
+		}
+	  }, [profileImg]);
+
+
+
+	useEffect(() => {
+		refetch();
+	}, [username, refetch]);
+
+
+
+	const handleUpdateProfile = async () => {
+		const updateData = {};
+		if (coverImg) updateData.coverImg = coverImg;
+		if (profileImg) updateData.profileImg = profileImg;
+
+		await updateProfile(updateData);
+		setProfileImg(null);
+		setCoverImg(null);
+	};
+
 	return (
 		<>
 			<div className='flex-[4_4_0]  border-r border-gray-700 min-h-screen '>
 				{/* HEADER */}
-				{(isLoading || isRefetching)&& <ProfileHeaderSkeleton />}
+				{(isLoading || isRefetching) && <ProfileHeaderSkeleton />}
 				{!isLoading && !isRefetching && !user && <p className='text-center text-lg mt-4'>User not found</p>}
 				<div className='flex flex-col'>
 					{!isLoading && !isRefetching && user && (
@@ -110,14 +217,14 @@ const ProfilePage = () => {
 								<input
 									type='file'
 									hidden
-									accept="image/*"
+									accept='image/*'
 									ref={coverImgRef}
 									onChange={(e) => handleImgChange(e, "coverImg")}
 								/>
 								<input
 									type='file'
 									hidden
-									accept="image/*"
+									accept='image/*'
 									ref={profileImgRef}
 									onChange={(e) => handleImgChange(e, "profileImg")}
 								/>
@@ -137,21 +244,23 @@ const ProfilePage = () => {
 								</div>
 							</div>
 							<div className='flex justify-end px-4 mt-5'>
-								{isMyProfile && <EditProfileModal />}
+								{isMyProfile && <EditProfileModal authUser={authUser} />}
 								{!isMyProfile && (
 									<button
 										className='btn btn-outline rounded-full btn-sm'
-										onClick={() => alert("Followed successfully")}
+										onClick={() => follow(user?._id)}
 									>
-										Follow
+										{isPending && "Loading..."}
+										{!isPending && amIFollowing && "Unfollow"}
+										{!isPending && !amIFollowing && "Follow"}
 									</button>
 								)}
 								{(coverImg || profileImg) && (
 									<button
 										className='btn btn-primary rounded-full btn-sm text-white px-4 ml-2'
-										onClick={() => alert("Profile updated successfully")}
+										onClick={handleUpdateProfile }
 									>
-										Update
+										{isUpdatingProfile ? "Updating..." : "Update"}
 									</button>
 								)}
 							</div>
@@ -174,7 +283,8 @@ const ProfilePage = () => {
 													rel='noreferrer'
 													className='text-sm text-blue-500 hover:underline'
 												>
-													youtube.com/@asaprogrammer_
+													{/* Updated this after recording the video. I forgot to update this while recording, sorry, thx. */}
+													{user?.link}
 												</a>
 											</>
 										</div>
