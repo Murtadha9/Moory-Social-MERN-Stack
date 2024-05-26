@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import useUpdateUserProfile from "../../hooks/useUpdateUserProfile";
+import toast from "react-hot-toast";
 
-const EditProfileModal = () => {
+const EditProfileModal = ({ authUser }) => {
 	const [formData, setFormData] = useState({
 		fullName: "",
 		username: "",
@@ -11,8 +13,55 @@ const EditProfileModal = () => {
 		currentPassword: "",
 	});
 
+	const { updateProfile, isUpdatingProfile } = useUpdateUserProfile();
+
 	const handleInputChange = (e) => {
 		setFormData({ ...formData, [e.target.name]: e.target.value });
+	};
+
+	useEffect(() => {
+		if (authUser) {
+			setFormData({
+				fullName: authUser.fullName,
+				username: authUser.username,
+				email: authUser.email,
+				bio: authUser.bio,
+				link: authUser.link,
+				newPassword: "",
+				currentPassword: "",
+			});
+		}
+	}, [authUser]);
+
+	const validateFormData = (data) => {
+		if (data.username.length < 7 || data.username.length > 20) {
+			toast.error("Username must be between 7 and 20 characters");
+			return false;
+		}
+		if (data.username.includes(' ')) {
+			toast.error("Username cannot contain spaces");
+			return false;
+		}
+		if (data.username !== data.username.toLowerCase()) {
+			toast.error("Username must be lowercase");
+			return false;
+		}
+		if (!data.username.match(/^[a-zA-Z0-9]+$/)) {
+			toast.error("Username can only contain letters and numbers");
+			return false;
+		}
+		return true;
+	};
+
+	const handleSubmit = async (e) => {
+		e.preventDefault();
+		if (validateFormData(formData)) {
+			try {
+				await updateProfile(formData);
+			} catch (error) {
+				console.error("Error updating profile:", error.message);
+			}
+		}
 	};
 
 	return (
@@ -26,13 +75,7 @@ const EditProfileModal = () => {
 			<dialog id='edit_profile_modal' className='modal'>
 				<div className='modal-box border rounded-md border-gray-700 shadow-md'>
 					<h3 className='font-bold text-lg my-3'>Update Profile</h3>
-					<form
-						className='flex flex-col gap-4'
-						onSubmit={(e) => {
-							e.preventDefault();
-							alert("Profile updated successfully");
-						}}
-					>
+					<form className='flex flex-col gap-4' onSubmit={handleSubmit}>
 						<div className='flex flex-wrap gap-2'>
 							<input
 								type='text'
@@ -94,7 +137,9 @@ const EditProfileModal = () => {
 							name='link'
 							onChange={handleInputChange}
 						/>
-						<button className='btn btn-primary rounded-full btn-sm text-white'>Update</button>
+						<button className='btn btn-primary rounded-full btn-sm text-white'>
+							{isUpdatingProfile ? "Updating..." : "Update"}
+						</button>
 					</form>
 				</div>
 				<form method='dialog' className='modal-backdrop'>

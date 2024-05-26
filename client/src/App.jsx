@@ -16,6 +16,7 @@ import LoadingSpinner from './Components/LoadingSpinner/LoadingSpinner';
 const App = () => {
 
 	const { data: authUser, isLoading } = useQuery({
+		// we use queryKey to give a unique name to our query and refer to it later
 		queryKey: ["authUser"],
 		queryFn: async () => {
 			try {
@@ -31,8 +32,8 @@ const App = () => {
 				throw new Error(error);
 			}
 		},
-		retry:false,
-	})
+		retry: false,
+	});
 
 	if (isLoading) {
 		return (
@@ -42,21 +43,21 @@ const App = () => {
 		);
 	}
 
-
-  return (
+	return (
 		<div className='flex max-w-6xl mx-auto'>
-      <BrowserRouter>
-	  {authUser && <Sidebar />}
+			{/* Common component, bc it's not wrapped with Routes */}
+			<BrowserRouter>
+			{authUser && <Sidebar />}
 			<Routes>
-				<Route path='/' element={authUser? <Home /> : <Navigate to={'/signin'} />} />
-				<Route path='/signup' element={!authUser ? <SignUp /> :<Navigate to={'/'} />}  />
-				<Route path='/signin' element={!authUser ? <SignIn /> :<Navigate to={'/'} />} />
-				<Route path='/notifications' element={authUser? <NotificationPage />: <Navigate to={'/signin'} />} />
-				<Route path='/profile/:username' element={authUser? <ProfilePage/> : <Navigate to={'/signin'} />} /> 
+				<Route path='/' element={authUser ? <Home /> : <Navigate to='/signin' />} />
+				<Route path='/signin' element={!authUser ? <SignIn /> : <Navigate to='/' />} />
+				<Route path='/signup' element={!authUser ? <SignUp /> : <Navigate to='/' />} />
+				<Route path='/notifications' element={authUser ? <NotificationPage /> : <Navigate to='/signin' />} />
+				<Route path='/profile/:username' element={authUser ? <ProfilePage /> : <Navigate to='/signin' />} />
 			</Routes>
-			{authUser && <RightPanel/>}
-			<Toaster/>
-      </BrowserRouter>
+			{authUser && <RightPanel />}
+			<Toaster />
+			</BrowserRouter>
 		</div>
 	);
 }

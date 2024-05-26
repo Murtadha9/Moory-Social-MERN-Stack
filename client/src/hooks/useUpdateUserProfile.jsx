@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
@@ -16,10 +17,12 @@ const useUpdateUserProfile = () => {
 				});
 				const data = await res.json();
 				if (!res.ok) {
-					throw new Error(data.error || "Something went wrong");
+					console.error("Error response from server:", data);
+					throw new Error(data.message || "Something went wrong");
 				}
 				return data;
 			} catch (error) {
+				console.error("Error in mutationFn:", error.message);
 				throw new Error(error.message);
 			}
 		},
@@ -32,6 +35,7 @@ const useUpdateUserProfile = () => {
 		},
 		onError: (error) => {
 			toast.error(error.message);
+			console.error("Error in useMutation onError:", error.message);
 		},
 	});
 

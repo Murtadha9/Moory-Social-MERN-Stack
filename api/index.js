@@ -12,6 +12,7 @@ import noteRoutes from './routes/notification.route.js'
 const app = express();
 app.use(express.json());
 app.use(cookieParser()); 
+
 dotenv.config();
 
 
