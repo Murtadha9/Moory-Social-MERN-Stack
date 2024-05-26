@@ -30,7 +30,7 @@ export const createPost=async (req, res, next) =>{
 export const likeUnlikePost=async (req, res, next) =>{
     try {
         const userId = req.user.id;
-		const { postId } = req.params.id;
+		const { id: postId } = req.params;
 
 		const post = await Post.findById(postId);
         if (!post) {
